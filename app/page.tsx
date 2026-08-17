@@ -1,3 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
 const modules = [
   { icon: "📊", title: "系統首頁", text: "查看廟務整體狀況" },
   { icon: "📅", title: "排班／值班", text: "管理值班與人員排班" },
@@ -10,6 +16,43 @@ const modules = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+
+  const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    async function checkLogin() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
+      setEmail(user.email ?? "");
+      setChecking(false);
+    }
+
+    checkLogin();
+  }, [router]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
+
+  if (checking) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-slate-500">正在確認登入狀態...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="shell">
       <aside className="sidebar">
@@ -22,7 +65,10 @@ export default function Home() {
         </div>
 
         <nav>
-          <button className="nav-item active">📊 <span>系統首頁</span></button>
+          <button className="nav-item active">
+            📊 <span>系統首頁</span>
+          </button>
+
           {modules.slice(1).map((item) => (
             <button className="nav-item" key={item.title}>
               {item.icon} <span>{item.title}</span>
@@ -37,15 +83,30 @@ export default function Home() {
             <p className="eyebrow">TEMPLE MANAGEMENT SYSTEM</p>
             <h1>廟務管理系統</h1>
           </div>
-          <div className="user-pill">管理員</div>
+
+          <div className="flex items-center gap-3">
+            <div className="user-pill">
+              {email || "管理員"}
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+            >
+              登出
+            </button>
+          </div>
         </header>
 
         <section className="welcome">
           <div>
             <p className="eyebrow">管理後台</p>
             <h2>歡迎使用廟務管理系統</h2>
-            <p>目前先完成網站介面，接下來將逐一串接 Supabase 資料。</p>
+            <p>
+              目前先完成網站介面，接下來將逐一串接 Supabase 資料。
+            </p>
           </div>
+
           <div className="status">● 系統準備中</div>
         </section>
 
@@ -53,10 +114,12 @@ export default function Home() {
           {modules.map((item) => (
             <article className="card" key={item.title}>
               <div className="card-icon">{item.icon}</div>
+
               <div>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
               </div>
+
               <span className="arrow">→</span>
             </article>
           ))}
