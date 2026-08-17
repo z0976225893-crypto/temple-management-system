@@ -1,244 +1,154 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
 type Staff = {
   id: string;
   name: string;
-  active: boolean;
-  auth_user_id: string | null;
   email: string | null;
   phone: string | null;
+  role: string | null;
+  status: string | null;
+  created_at: string;
 };
 
 export default function StaffPage() {
+  const router = useRouter();
+
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-
-  async function loadStaff() {
-    setLoading(true);
-    setMessage("");
-
-    const { data, error } = await supabase
-      .from("staff")
-      .select("id, name, active, auth_user_id, email, phone")
-      .order("name");
-
-    if (error) {
-      setMessage(`讀取人員失敗：${error.message}`);
-      setStaff([]);
-    } else {
-      setStaff(data ?? []);
-    }
-
-    setLoading(false);
-  }
 
   useEffect(() => {
-    loadStaff();
-  }, []);
+    async function checkLoginAndLoadStaff() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-  async function handleAddStaff(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-    if (!name.trim()) {
-      setMessage("請輸入姓名");
-      return;
+      const { data, error } = await supabase
+        .from("staff")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        setLoading(false);
+        return;
+      }
+
+      setStaff(data || []);
+      setLoading(false);
     }
 
-    setMessage("");
+    checkLoginAndLoadStaff();
+  }, [router]);
 
-    const { error } = await supabase.from("staff").insert({
-      name: name.trim(),
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      active: true,
-    });
-
-    if (error) {
-      setMessage(`新增失敗：${error.message}`);
-      return;
-    }
-
-    setName("");
-    setEmail("");
-    setPhone("");
-    setMessage("人員新增成功！");
-    await loadStaff();
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.replace("/login");
   }
 
-  async function toggleActive(person: Staff) {
-    const { error } = await supabase
-      .from("staff")
-      .update({ active: !person.active })
-      .eq("id", person.id);
-
-    if (error) {
-      setMessage(`更新失敗：${error.message}`);
-      return;
-    }
-
-    await loadStaff();
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p>載入中...</p>
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
+    <main className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-sm text-slate-500">
               TEMPLE MANAGEMENT SYSTEM
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
+            <h1 className="text-3xl font-bold text-slate-900 mt-2">
               廟務人員
             </h1>
 
-            <p className="mt-2 text-slate-500">
-              管理廟務工作人員資料
+            <p className="text-slate-500 mt-2">
+              管理廟務工作人員
             </p>
           </div>
 
-          <a
-            href="/"
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          <button
+            onClick={handleLogout}
+            className="rounded-xl bg-slate-900 text-white px-5 py-3 hover:bg-slate-800"
           >
-            ← 回首頁
-          </a>
+            登出
+          </button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900">
-              新增人員
-            </h2>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-200">
+            <h2 className="text-xl font-bold">人員名單</h2>
+          </div>
 
-            <form onSubmit={handleAddStaff} className="mt-5 space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  姓名
-                </label>
-
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="例如：王小明"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  電子郵件
-                </label>
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="example@gmail.com"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  電話
-                </label>
-
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="0912-345-678"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 font-medium text-white hover:bg-slate-800"
-              >
-                ＋ 新增人員
-              </button>
-
-              {message && (
-                <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
-                  {message}
-                </div>
-              )}
-            </form>
-          </section>
-
-          <section className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                人員列表
-              </h2>
-
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
-                共 {staff.length} 人
-              </span>
+          {staff.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              目前沒有廟務人員資料
             </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="text-left p-4">姓名</th>
+                    <th className="text-left p-4">電子郵件</th>
+                    <th className="text-left p-4">電話</th>
+                    <th className="text-left p-4">職務</th>
+                    <th className="text-left p-4">狀態</th>
+                  </tr>
+                </thead>
 
-            {loading ? (
-              <div className="py-12 text-center text-slate-500">
-                載入中...
-              </div>
-            ) : staff.length === 0 ? (
-              <div className="py-12 text-center text-slate-500">
-                目前沒有廟務人員資料
-              </div>
-            ) : (
-              <div className="mt-5 space-y-3">
-                {staff.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-bold text-slate-900">
-                          {person.name}
-                        </h3>
-
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs ${
-                            person.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {person.active ? "啟用中" : "已停用"}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 space-y-1 text-sm text-slate-500">
-                        {person.email && <p>📧 {person.email}</p>}
-                        {person.phone && <p>📞 {person.phone}</p>}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleActive(person)}
-                      className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                <tbody>
+                  {staff.map((person) => (
+                    <tr
+                      key={person.id}
+                      className="border-t border-slate-100"
                     >
-                      {person.active ? "停用" : "重新啟用"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                      <td className="p-4 font-medium">
+                        {person.name}
+                      </td>
+
+                      <td className="p-4">
+                        {person.email || "-"}
+                      </td>
+
+                      <td className="p-4">
+                        {person.phone || "-"}
+                      </td>
+
+                      <td className="p-4">
+                        {person.role || "-"}
+                      </td>
+
+                      <td className="p-4">
+                        {person.status || "active"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+
+        <button
+          onClick={() => router.push("/")}
+          className="mt-6 text-slate-600 hover:text-slate-900"
+        >
+          ← 返回系統首頁
+        </button>
       </div>
     </main>
   );
