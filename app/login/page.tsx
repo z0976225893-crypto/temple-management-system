@@ -1,8 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -19,11 +23,21 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
-    // 下一階段會在這裡接 Supabase Auth
-    setTimeout(() => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
       setLoading(false);
-      setMessage("登入功能準備中，下一步將連接 Supabase。");
-    }, 500);
+      setMessage("登入失敗：" + error.message);
+      return;
+    }
+
+    setLoading(false);
+
+    router.push("/");
+    router.refresh();
   }
 
   return (
