@@ -1,127 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    alert("登入功能即將連接 Supabase");
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!email || !password) {
+      setMessage("請輸入帳號與密碼");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+
+    // 下一階段會在這裡接 Supabase Auth
+    setTimeout(() => {
+      setLoading(false);
+      setMessage("登入功能準備中，下一步將連接 Supabase。");
+    }, 500);
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f5f6f8",
-        padding: "24px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "420px",
-          background: "#ffffff",
-          borderRadius: "20px",
-          padding: "40px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "30px" }}>
-          <div style={{ fontSize: "48px" }}>🏯</div>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <div className="text-center mb-8">
+            <div className="text-5xl mb-4">🏯</div>
 
-          <h1
-            style={{
-              margin: "10px 0 6px",
-              fontSize: "28px",
-              color: "#172033",
-            }}
-          >
-            廟務管理系統
-          </h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              廟務管理系統
+            </h1>
 
-          <p style={{ color: "#6b7280", margin: 0 }}>
-            管理員登入
-          </p>
+            <p className="mt-2 text-sm text-slate-500">
+              管理員登入
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                電子郵件
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="admin@example.com"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                密碼
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="請輸入密碼"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              />
+            </div>
+
+            {message && (
+              <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-slate-900 px-4 py-3 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            >
+              {loading ? "登入中..." : "登入"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/"
+              className="text-sm text-slate-500 hover:text-slate-900"
+            >
+              ← 返回系統首頁
+            </a>
+          </div>
         </div>
-
-        <form onSubmit={handleLogin}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              fontWeight: 600,
-            }}
-          >
-            Email
-          </label>
-
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="請輸入管理員 Email"
-            required
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "13px 14px",
-              border: "1px solid #d1d5db",
-              borderRadius: "10px",
-              marginBottom: "20px",
-              fontSize: "16px",
-            }}
-          />
-
-          <label
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              fontWeight: 600,
-            }}
-          >
-            密碼
-          </label>
-
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="請輸入密碼"
-            required
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "13px 14px",
-              border: "1px solid #d1d5db",
-              borderRadius: "10px",
-              marginBottom: "24px",
-              fontSize: "16px",
-            }}
-          />
-
-          <button
-            type="submit"
-            style={{
-              width: "100%",
-              padding: "14px",
-              border: "none",
-              borderRadius: "10px",
-              background: "#172033",
-              color: "#ffffff",
-              fontSize: "16px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            登入系統
-          </button>
-        </form>
       </div>
     </main>
   );
